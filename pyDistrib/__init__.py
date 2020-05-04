@@ -1,1 +1,1 @@
-from pyDistribServer import PyDistribServer
+from .server import PyDistribServer
