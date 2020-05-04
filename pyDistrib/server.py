@@ -5,6 +5,9 @@ from contextlib import contextmanager
 from threading import Thread
 from time import sleep
 
+from atomic_counter import AtomicCounter
+from slave import Slave, Status
+
 
 class PyDistribServer:
 
@@ -18,6 +21,7 @@ class PyDistribServer:
         self.UDP_PORT1 = 6789
         self.UDP_PORT2 = 6790
         self.UDP_PORT3 = 6791
+        self.counter = AtomicCounter()
 
     def start(self):
         Thread(target=self.listen_for_handshake).start()
@@ -34,26 +38,25 @@ class PyDistribServer:
 
     def keep_slaves_alive(self):
         while True:
-            print("Slaves:", self.slaves)
             with ThreadPoolExecutor(max_workers=os.cpu_count() - 1) as executor:
                 for slave in self.slaves:
-                    executor.submit(self.keep_alive_routine, slave[0])
+                    executor.submit(self.keep_alive_routine, slave)
             self.slaves -= self.timed_out_slaves
             sleep(5)
 
-    def keep_alive_routine(self, slave_addr):
+    def keep_alive_routine(self, slave: Slave):
         with self.udp_socket() as sock:
             sock.bind(("", self.UDP_PORT3))
             sock.settimeout(5)
-            print("Sending a keep alive signal to", slave_addr)
-            sock.sendto(b'PyDistrib KEEPALIVE', (slave_addr, self.UDP_PORT3))
+            print("Sending a keep alive signal to", slave)
+            sock.sendto(b'PyDistrib KEEPALIVE', (slave.address, self.UDP_PORT3))
             try:
                 data, addr = sock.recvfrom(1024)
                 if data == b'PyDistrib KEEPALIVE ACK':
-                    print(slave_addr, "Acknowledged the keep alive signal")
+                    print(slave, "acknowledged the keep alive signal\n")
             except socket.timeout:
-                print(slave_addr, "timed out")
-                self.timed_out_slaves.add(slave_addr)
+                print(slave, "timed out\n")
+                self.timed_out_slaves.add(slave)
 
     def listen_for_handshake(self):
         with self.udp_socket() as sock:
@@ -61,11 +64,14 @@ class PyDistribServer:
             while True:
                 data, addr = sock.recvfrom(1024)
                 if data == b'PyDistrib HANDSHAKE':
+                    slave = Slave(addr[0], self.counter.get_and_increment(), Status.READY)
                     with self.udp_socket() as ack_socket:
                         ack_socket.sendto(b'PyDistrib HANDSHAKE ACK', (addr[0], self.UDP_PORT1))
-                    self.slaves.add(addr)
-                    self.timed_out_slaves.discard(addr)
+                    print("Connection established. New slave:", slave)
+                    self.slaves.add(slave)
+                    self.timed_out_slaves.discard(slave)
                 sleep(5)
+
 
     @contextmanager
     def udp_socket(self):
