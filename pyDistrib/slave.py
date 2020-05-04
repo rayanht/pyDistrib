@@ -1,5 +1,7 @@
 from enum import Enum
 
+from atomic_counter import AtomicCounter
+
 
 class Status(Enum):
     OFFLINE = 0
@@ -16,6 +18,11 @@ class Slave:
         self.status = status
         self.number = number
         self.address = address
+        self.counter = AtomicCounter(initial=2)
+        self.lives = self.counter.get()
+
+    def missed_ack(self):
+        self.lives = self.counter.get_and_decrement()
 
     def __repr__(self):
         return f"Slave #{self.number} @ {self.address}. Status: {self.status}"

@@ -55,8 +55,12 @@ class PyDistribServer:
                 if data == b'PyDistrib KEEPALIVE ACK':
                     print(slave, "acknowledged the keep alive signal\n")
             except socket.timeout:
-                print(slave, "timed out\n")
-                self.timed_out_slaves.add(slave)
+                if slave.lives == 0:
+                    print(slave, "timed out\n")
+                    self.timed_out_slaves.add(slave)
+                else:
+                    print(slave, "failed to acknowledge the keep alive signal\n")
+                    slave.missed_ack()
 
     def listen_for_handshake(self):
         with self.udp_socket() as sock:
@@ -71,7 +75,6 @@ class PyDistribServer:
                     self.slaves.add(slave)
                     self.timed_out_slaves.discard(slave)
                 sleep(5)
-
 
     @contextmanager
     def udp_socket(self):
