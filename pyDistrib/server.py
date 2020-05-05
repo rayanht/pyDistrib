@@ -12,10 +12,8 @@ from slave import Slave, Status
 class PyDistribServer:
 
     # TODO Replace debug print statements with proper logging
-
     def __init__(self):
         self.slaves = set()
-        self.timed_out_slaves = set()
         self.UDP_IP = '255.255.255.255'
         # TODO We probably only need 1 port
         self.UDP_PORT1 = 6789
@@ -39,9 +37,8 @@ class PyDistribServer:
     def keep_slaves_alive(self):
         while True:
             with ThreadPoolExecutor(max_workers=os.cpu_count() - 1) as executor:
-                for slave in self.slaves:
+                for slave in filter(Slave.is_online, self.slaves):
                     executor.submit(self.keep_alive_routine, slave)
-            self.slaves -= self.timed_out_slaves
             sleep(5)
 
     def keep_alive_routine(self, slave: Slave):
@@ -57,7 +54,7 @@ class PyDistribServer:
             except socket.timeout:
                 if slave.lives == 0:
                     print(slave, "timed out\n")
-                    self.timed_out_slaves.add(slave)
+                    slave.set_status(Status.OFFLINE)
                 else:
                     print(slave, "failed to acknowledge the keep alive signal\n")
                     slave.missed_ack()
@@ -66,15 +63,25 @@ class PyDistribServer:
         with self.udp_socket() as sock:
             sock.bind(("", self.UDP_PORT2))
             while True:
-                data, addr = sock.recvfrom(1024)
+                data, (addr, port) = sock.recvfrom(1024)
                 if data == b'PyDistrib HANDSHAKE':
-                    slave = Slave(addr[0], self.counter.get_and_increment(), Status.READY)
-                    with self.udp_socket() as ack_socket:
-                        ack_socket.sendto(b'PyDistrib HANDSHAKE ACK', (addr[0], self.UDP_PORT1))
-                    print("Connection established. New slave:", slave)
-                    self.slaves.add(slave)
-                    self.timed_out_slaves.discard(slave)
+                    self.acknowledge_handshake(addr)
                 sleep(5)
+
+    def acknowledge_handshake(self, addr):
+        with self.udp_socket() as ack_socket:
+            ack_socket.sendto(b'PyDistrib HANDSHAKE ACK', (addr, self.UDP_PORT1))
+        # TODO Use actual UIDs instead of the placeholder 1
+        slave = Slave(addr, self.counter.get_and_increment(), Status.ONLINE, 1)
+        offline_slaves = set(filter(Slave.is_offline, self.slaves))
+        if slave in offline_slaves:
+            self.counter.decrement()
+            slave = next(x for x in offline_slaves if x == slave)
+            slave.set_status(Status.ONLINE)
+            print("Connection recovered. Slave:", slave)
+        else:
+            print("Connection established. New slave:", slave)
+            self.slaves.add(slave)
 
     @contextmanager
     def udp_socket(self):
