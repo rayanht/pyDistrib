@@ -63,16 +63,17 @@ class PyDistribServer:
         with self.udp_socket() as sock:
             sock.bind(("", self.UDP_PORT2))
             while True:
+                print(self.slaves)
                 data, (addr, port) = sock.recvfrom(1024)
-                if data == b'PyDistrib HANDSHAKE':
-                    self.acknowledge_handshake(addr)
-                sleep(5)
+                if b'PyDistrib HANDSHAKE' in data:
+                    uuid = str(data).split("|")[1]
+                    self.acknowledge_handshake(addr, uuid)
+                sleep(3)
 
-    def acknowledge_handshake(self, addr):
+    def acknowledge_handshake(self, addr, uuid):
         with self.udp_socket() as ack_socket:
             ack_socket.sendto(b'PyDistrib HANDSHAKE ACK', (addr, self.UDP_PORT1))
-        # TODO Use actual UIDs instead of the placeholder 1
-        slave = Slave(addr, self.counter.get_and_increment(), Status.ONLINE, 1)
+        slave = Slave(addr, self.counter.get_and_increment(), Status.ONLINE, uuid)
         offline_slaves = set(filter(Slave.is_offline, self.slaves))
         if slave in offline_slaves:
             self.counter.decrement()

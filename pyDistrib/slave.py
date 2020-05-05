@@ -14,11 +14,11 @@ class Status(Enum):
 
 class Slave:
 
-    def __init__(self, address: str, sequence_number: int, status: Status, uid: int):
+    def __init__(self, address: str, sequence_number: int, status: Status, uuid: str):
         self.status = status
         self.sequence_number = sequence_number
         self.address = address
-        self.uid = uid
+        self.uuid = uuid
         self.counter = AtomicCounter(initial=1)
         self.lives = self.counter.get()
 
@@ -40,13 +40,13 @@ class Slave:
     def __eq__(self, other):
         if not isinstance(other, Slave):
             return False
-        return other.address == self.address and other.uid == self.uid
+        return other.address == self.address and other.uuid == self.uuid
 
     def __repr__(self):
-        return f"Slave #{self.sequence_number} @ {self.address}. Status: {self.status}"
+        return f"Slave #{self.sequence_number}/{self.uuid} @ {self.address}. Status: {self.status}"
 
     def __hash__(self):
-        return hash((self.address, self.uid))
+        return hash((self.address, self.uuid))
 
     def __str__(self):
         return f"Slave #{self.sequence_number} ({self.address})"
