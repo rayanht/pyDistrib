@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pyDistrib"
-version = "0.0.3"
+version = "0.0.4"
 description = "A package to distribute Python computations across devices"
 authors = ["Rayan Hatout <rayan.hatout@gmail.com>"]
 license = "GPL-3.0-only"
