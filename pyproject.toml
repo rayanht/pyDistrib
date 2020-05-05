@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pyDistrib"
-version = "0.0.2"
+version = "0.0.3"
 description = "A package to distribute Python computations across devices"
 authors = ["Rayan Hatout <rayan.hatout@gmail.com>"]
 license = "GPL-3.0-only"
@@ -11,6 +11,7 @@ classifiers=[
         "Operating System :: OS Independent",
 ]
 repository="https://github.com/rayanht/pyDistrib"
+readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.6"
