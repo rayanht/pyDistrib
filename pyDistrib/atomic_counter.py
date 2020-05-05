@@ -6,6 +6,10 @@ class AtomicCounter:
         self.value = initial
         self._lock = threading.Lock()
 
+    def decrement(self):
+        with self._lock:
+            self.value -= 1
+
     def get_and_increment(self):
         with self._lock:
             self.value += 1
