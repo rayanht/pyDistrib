@@ -1,6 +1,6 @@
 from enum import Enum
 
-from atomic_counter import AtomicCounter
+from .atomic_counter import AtomicCounter
 
 
 class Status(Enum):

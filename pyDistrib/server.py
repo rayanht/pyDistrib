@@ -5,8 +5,8 @@ from contextlib import contextmanager
 from threading import Thread
 from time import sleep
 
-from atomic_counter import AtomicCounter
-from slave import Slave, Status
+from .atomic_counter import AtomicCounter
+from .slave import Slave, Status
 
 
 class PyDistribServer:

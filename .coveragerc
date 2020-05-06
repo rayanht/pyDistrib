@@ -1,0 +1,11 @@
+# .coveragerc
+[report]
+show_missing = True
+omit =
+    /home/circleci/.cache/
+    pyDistrib/__init__.py
+    pyDistrib/tests/*
+
+[run]
+source =
+    pyDistrib/

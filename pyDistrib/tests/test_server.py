@@ -1,7 +1,5 @@
 import unittest
 
-from pyDistrib import server
-
 
 class TestServer(unittest.TestCase):
 

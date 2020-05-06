@@ -1,0 +1,49 @@
+
+version: 2.1
+
+orbs:
+  codecov: codecov/codecov@1.0.5
+  
+executors:
+  python:
+    docker:
+    - image: circleci/python:<<parameters.tag>>
+    environment:
+      POETRY_CACHE_DIR: /home/circleci/project/.poetry
+    parameters:
+      tag:
+        default: latest
+        type: string
+
+jobs:
+  build-and-test:
+    executor: python
+    steps:
+    - checkout
+    - restore_cache:
+        keys:
+        - deps-{{ checksum "poetry.lock" }}    
+    - run: 
+        name: Install Dependencies
+        command: |
+          poetry install
+    - save_cache:
+        key: deps-{{ checksum "poetry.lock" }}
+        paths:
+        - /home/circleci/project/.poetry/virtualenvs 
+    - run:
+        name: Lint
+        command: |
+          poetry run flake8 --exit-zero pyDistrib
+          poetry run pylint --exit-zero pyDistrib
+    - run:
+        name: Run Tests & Report Coverage
+        command: |
+          poetry run coverage run -m pytest --cov-report=xml
+          poetry run codecov
+    
+workflows:
+  version: 2
+  build-and-test-workflow:
+    jobs:
+      - build-and-test
