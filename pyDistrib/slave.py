@@ -23,7 +23,8 @@ class Slave:
         self.lives = self.counter.get()
 
     def missed_ack(self):
-        self.lives = self.counter.get_and_decrement()
+        if self.counter.get_and_decrement() == 0:
+            self.set_status(Status.OFFLINE)
 
     def is_online(self):
         return self.status == Status.ONLINE or self.status == Status.BUSY

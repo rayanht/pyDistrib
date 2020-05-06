@@ -54,7 +54,6 @@ class PyDistribServer:
             except socket.timeout:
                 if slave.lives == 0:
                     print(slave, "timed out\n")
-                    slave.set_status(Status.OFFLINE)
                 else:
                     print(slave, "failed to acknowledge the keep alive signal\n")
                     slave.missed_ack()
