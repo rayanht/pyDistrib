@@ -1,3 +1,4 @@
+import logging
 import os
 import socket
 from concurrent.futures.thread import ThreadPoolExecutor
@@ -8,10 +9,11 @@ from time import sleep
 from .atomic_counter import AtomicCounter
 from .slave import Slave, Status
 
+logging.basicConfig(format='%(asctime)s - %(message)s', datefmt='%d-%b-%y %H:%M:%S', level=logging.INFO)
+
 
 class PyDistribServer:
 
-    # TODO Replace debug print statements with proper logging
     def __init__(self):
         self.slaves = set()
         self.UDP_IP = '255.255.255.255'
@@ -45,24 +47,20 @@ class PyDistribServer:
         with self.udp_socket() as sock:
             sock.bind(("", self.UDP_PORT3))
             sock.settimeout(5)
-            print("Sending a keep alive signal to", slave)
+            logging.info(f"Sending a keep alive signal to {slave}")
             sock.sendto(b'PyDistrib KEEPALIVE', (slave.address, self.UDP_PORT3))
             try:
                 data, addr = sock.recvfrom(1024)
                 if data == b'PyDistrib KEEPALIVE ACK':
-                    print(slave, "acknowledged the keep alive signal\n")
+                    logging.info(f"{slave} acknowledged the keep alive signal\n")
             except socket.timeout:
-                if slave.lives == 0:
-                    print(slave, "timed out\n")
-                else:
-                    print(slave, "failed to acknowledge the keep alive signal\n")
-                    slave.missed_ack()
+                slave.missed_ack()
 
     def listen_for_handshake(self):
         with self.udp_socket() as sock:
             sock.bind(("", self.UDP_PORT2))
             while True:
-                print(self.slaves)
+                logging.info(self.slaves)
                 data, (addr, port) = sock.recvfrom(1024)
                 if b'PyDistrib HANDSHAKE' in data:
                     uuid = str(data).split("|")[1]
@@ -78,9 +76,9 @@ class PyDistribServer:
             self.counter.decrement()
             slave = next(x for x in offline_slaves if x == slave)
             slave.set_status(Status.ONLINE)
-            print("Connection recovered. Slave:", slave)
+            logging.info(f"Connection recovered. Slave: {slave}")
         else:
-            print("Connection established. New slave:", slave)
+            logging.info(f"Connection established. New slave: {slave}")
             self.slaves.add(slave)
 
     @contextmanager

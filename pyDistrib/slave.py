@@ -1,3 +1,4 @@
+import logging
 from enum import Enum
 
 from .atomic_counter import AtomicCounter
@@ -19,11 +20,12 @@ class Slave:
         self.sequence_number = sequence_number
         self.address = address
         self.uuid = uuid
-        self.counter = AtomicCounter(initial=1)
-        self.lives = self.counter.get()
+        self.counter = AtomicCounter(initial=2)
 
     def missed_ack(self):
+        logging.warning(f"{self} failed to acknowledge the keep alive signal\n")
         if self.counter.get_and_decrement() == 0:
+            logging.warning(f"{self} timed out\n")
             self.set_status(Status.OFFLINE)
 
     def is_online(self):
