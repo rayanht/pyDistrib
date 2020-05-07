@@ -2,7 +2,7 @@ import socket
 import unittest
 
 from pyDistrib import PyDistribServer
-from udp_socket_wrapper import udp_socket
+from pyDistrib import udp_socket
 
 TEST_PORT = 9999
 
