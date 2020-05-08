@@ -30,7 +30,6 @@ class TestServer(unittest.TestCase):
                         try:
                             data, host = sock.recvfrom(1024)
                             if b'PyDistrib HANDSHAKE ACK' in data:
-                                print("here")
                                 returned_uid = str(data).split("|")[1]
                                 assert uid == returned_uid
                         except socket.timeout:
