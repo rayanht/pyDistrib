@@ -13,9 +13,9 @@ class TestServer(unittest.TestCase):
         with PyDistribServer(TEST_PORT).start():
             with udp_socket(binding=("", TEST_PORT), timeout=10) as sock:
                 try:
-                    data, (addr, port) = sock.recvfrom(1024)
+                    data, _ = sock.recvfrom(1024)
                     if data == b'PyDistrib INIT':
-                        assert addr == socket.gethostbyname(socket.gethostname())
+                        assert True
                 except socket.timeout:
                     self.fail("Socket timed out")
 
@@ -35,4 +35,5 @@ class TestServer(unittest.TestCase):
                         except socket.timeout:
                             self.fail("Socket timed out")
                 except socket.timeout:
+                    server.shutdown()
                     self.fail("Socket timed out")

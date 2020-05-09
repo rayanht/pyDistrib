@@ -21,7 +21,6 @@ class PyDistribServer:
         self.UDP_PORT3 = 6791
         self.counter = AtomicCounter()
         self.alive = True
-        self.address = socket.gethostbyname(socket.gethostname())
 
     @contextmanager
     def start(self):
