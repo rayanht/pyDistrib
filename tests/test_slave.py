@@ -1,22 +1,22 @@
 from unittest import TestCase
 
-from pyDistrib import Slave, Status
+from pyDistrib import Worker, Status
 
 
-class TestSlave(TestCase):
+class TestWorker(TestCase):
 
-    def test_slave_goes_offline_after_two_missed_acks(self):
-        slave = Slave("1.1.1.1", 1, Status.ONLINE, "1afc7e9f")
-        slave.missed_ack()
-        slave.missed_ack()
-        assert slave.is_offline()
+    def test_worker_goes_offline_after_two_missed_acks(self):
+        worker = Worker("1.1.1.1", 1, Status.ONLINE, "1afc7e9f")
+        worker.missed_ack()
+        worker.missed_ack()
+        assert worker.is_offline()
 
-    def test_slave_inequality(self):
-        slave1 = Slave("1.1.1.1", 1, Status.ONLINE, "1afc7e9f")
-        slave2 = Slave("2.2.2.2", 1, Status.ONLINE, "1afc7e9f")
-        assert slave1 != slave2
+    def test_worker_inequality(self):
+        worker1 = Worker("1.1.1.1", 1, Status.ONLINE, "1afc7e9f")
+        worker2 = Worker("2.2.2.2", 1, Status.ONLINE, "1afc7e9f")
+        assert worker1 != worker2
 
-    def test_slave_equality(self):
-        slave1 = Slave("1.1.1.1", 1, Status.ONLINE, "1afc7e9f")
-        slave2 = Slave("1.1.1.1", 45, Status.OFFLINE, "1afc7e9f")
-        assert slave1 == slave2
+    def test_worker_equality(self):
+        worker1 = Worker("1.1.1.1", 1, Status.ONLINE, "1afc7e9f")
+        worker2 = Worker("1.1.1.1", 45, Status.OFFLINE, "1afc7e9f")
+        assert worker1 == worker2

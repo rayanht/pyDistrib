@@ -13,7 +13,7 @@ class Status(Enum):
         return self.name
 
 
-class Slave:
+class Worker:
 
     def __init__(self, address: str, sequence_number: int, status: Status, uuid: str):
         self.status = status
@@ -41,15 +41,15 @@ class Slave:
         return self.address
 
     def __eq__(self, other):
-        if not isinstance(other, Slave):
+        if not isinstance(other, Worker):
             return False
         return other.address == self.address and other.uuid == self.uuid
 
     def __repr__(self):
-        return f"Slave #{self.sequence_number}/{self.uuid} @ {self.address}. Status: {self.status}"
+        return f"Worker #{self.sequence_number}/{self.uuid} @ {self.address}. Status: {self.status}"
 
     def __hash__(self):
         return hash((self.address, self.uuid))
 
     def __str__(self):
-        return f"Slave #{self.sequence_number} ({self.address})"
+        return f"Worker #{self.sequence_number} ({self.address})"

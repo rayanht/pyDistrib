@@ -4,7 +4,7 @@ from concurrent.futures.thread import ThreadPoolExecutor
 from contextlib import contextmanager
 
 from .atomic_counter import AtomicCounter
-from .slave import Slave, Status
+from .worker import Worker, Status
 from .udp_socket_wrapper import udp_socket
 
 logging.basicConfig(format='%(asctime)s - %(message)s', datefmt='%d-%b-%y %H:%M:%S', level=logging.INFO)
@@ -13,7 +13,7 @@ logging.basicConfig(format='%(asctime)s - %(message)s', datefmt='%d-%b-%y %H:%M:
 class PyDistribServer:
 
     def __init__(self, broadcast_port: int):
-        self.slaves = set()
+        self.workers = set()
         self.BROADCAST_IP = '255.255.255.255'
         # TODO We probably only need 1 port
         self.BROADCAST_PORT = broadcast_port
@@ -27,7 +27,7 @@ class PyDistribServer:
         with ThreadPoolExecutor() as executor:
             executor.submit(self.listen_for_handshake)
             executor.submit(self.broadcast_discovery_signals)
-            executor.submit(self.keep_slaves_alive)
+            executor.submit(self.keep_workers_alive)
             yield self
             self.alive = False
 
@@ -38,22 +38,22 @@ class PyDistribServer:
                 sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
                 sock.sendto(b'PyDistrib INIT', (self.BROADCAST_IP, self.BROADCAST_PORT))
 
-    def keep_slaves_alive(self):
+    def keep_workers_alive(self):
         while self.alive:
             with ThreadPoolExecutor() as executor:
-                for slave in filter(Slave.is_online, self.slaves):
-                    executor.submit(self.keep_alive_routine, slave)
+                for worker in filter(Worker.is_online, self.workers):
+                    executor.submit(self.keep_alive_routine, worker)
 
-    def keep_alive_routine(self, slave: Slave):
+    def keep_alive_routine(self, worker: Worker):
         with udp_socket(binding=("", self.UDP_PORT3), timeout=5) as sock:
-            logging.info(f"Sending a keep alive signal to {slave}")
-            sock.sendto(b'PyDistrib KEEPALIVE', (slave.address, self.UDP_PORT3))
+            logging.info(f"Sending a keep alive signal to {worker}")
+            sock.sendto(b'PyDistrib KEEPALIVE', (worker.address, self.UDP_PORT3))
             try:
                 data, addr = sock.recvfrom(1024)
                 if data == b'PyDistrib KEEPALIVE ACK':
-                    logging.info(f"{slave} acknowledged the keep alive signal\n")
+                    logging.info(f"{worker} acknowledged the keep alive signal\n")
             except socket.timeout:
-                slave.missed_ack()
+                worker.missed_ack()
 
     def listen_for_handshake(self):
         with udp_socket(binding=("", self.HANDSHAKE_PORT), timeout=3) as sock:
@@ -69,13 +69,13 @@ class PyDistribServer:
     def acknowledge_handshake(self, addr, uuid):
         with udp_socket() as ack_socket:
             ack_socket.sendto(bytes(f"PyDistrib HANDSHAKE ACK|{uuid}", 'utf-8'), (addr, self.BROADCAST_PORT))
-        slave = Slave(addr, self.counter.get_and_increment(), Status.ONLINE, uuid)
-        offline_slaves = set(filter(Slave.is_offline, self.slaves))
-        if slave in offline_slaves:
+        worker = Worker(addr, self.counter.get_and_increment(), Status.ONLINE, uuid)
+        offline_workers = set(filter(Worker.is_offline, self.workers))
+        if worker in offline_workers:
             self.counter.decrement()
-            slave = next(x for x in offline_slaves if x == slave)
-            slave.set_status(Status.ONLINE)
-            logging.info(f"Connection recovered. Slave: {slave}")
+            worker = next(x for x in offline_workers if x == worker)
+            worker.set_status(Status.ONLINE)
+            logging.info(f"Connection recovered. Worker: {worker}")
         else:
-            logging.info(f"Connection established. New slave: {slave}")
-            self.slaves.add(slave)
+            logging.info(f"Connection established. New worker: {worker}")
+            self.workers.add(worker)
