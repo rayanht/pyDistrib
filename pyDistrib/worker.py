@@ -8,6 +8,7 @@ class Status(Enum):
     OFFLINE = 0
     ONLINE = 1
     BUSY = 2
+    PENDING = 3
 
     def __str__(self):
         return self.name
@@ -23,9 +24,9 @@ class Worker:
         self.counter = AtomicCounter(initial=2)
 
     def missed_ack(self):
-        logging.warning(f"{self} failed to acknowledge the keep alive signal\n")
+        logging.warning(f"{self} failed to acknowledge the keep alive signal")
         if self.counter.get_and_decrement() == 0:
-            logging.warning(f"{self} timed out\n")
+            logging.warning(f"{self} timed out")
             self.set_status(Status.OFFLINE)
 
     def is_online(self):
